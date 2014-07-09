@@ -1,7 +1,7 @@
 {.deadcodeElim: on.}
 
 type
-  Cmpz {.final.} = object
+  Cmpz {.importc: "mpz_t", header: "<gmp.h>", final.} = object
   PCmpz = ptr Cmpz
   Pmpz* = ref Tmpz
   Tmpz {.pure, final.} = object
@@ -50,7 +50,7 @@ proc newMpz*(initVal: int = 0): PMpz =
   ## Initializes a big integer
   ## optionally sets its value.
   new(result, mpzFinalizer)
-  result.p = cast[ptr Cmpz](alloc(sizeof(Cmpz)))
+  result.p = cast[ptr Cmpz](alloc0(sizeof(Cmpz)))
   CmpzInit(result.p)
   if initVal != 0:
     CmpzSetSi(result.p, clong(initVal))
@@ -67,7 +67,7 @@ proc swap*(mpz, mpz2: Pmpz) =
   ## Swap the values mpz and mpz2 efficiently.
   CmpzSwap(mpz.p, mpz2.p)
 
-proc `$`*(mpz: Pmpz): string =
+proc `$`*(mpz: PMpz): string =
   ## Pmpz to string
   result = $CmpzGetStr(nil, 10, mpz.p)
 
@@ -120,21 +120,19 @@ proc pow *(mpz: PMpz, val: int): PMpz =
 when isMainModule:
   from strutils import parseInt
 
-  # Solve Euler 56
-  proc digitSum(num: string): int =
-    for c in num:
+  # Solve Euler 56 (Powerful digit sum)
+  # http://projecteuler.net/problem=56
+  proc digitSum(num: PMpz): int =
+    for c in $num:
       result += parseInt($c)
       
-  proc solve56() =
-    var 
-      sum = 0
+  proc solve56(): int =
     for a in 1.. <100:
       var ax = newMpz(a)
       for b in 1.. <100:
-        var tmpres = digitSum($pow(ax, b))
-        if tmpres > sum: sum = tmpres
-    echo sum
-
-  solve56()
+        var tmpres = digitSum(pow(ax, b))
+        if tmpres > result: result = tmpres
+        
+  echo solve56()
     
 {.passL: "-L/usr/local/lib -lgmp".}
