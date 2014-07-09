@@ -35,9 +35,12 @@ proc CmpzAddUi(mpz, mpz2: PCmpz, val: culong) {.cdecl, importc: "mpz_add_ui", he
 
 proc CMpzSub(mpz, mpz2, mpz3: PCmpz) {.cdecl, importc: "mpz_sub", header:"<gmp.h>"}
 
-# Misc
-proc CmpzPowUi(rop: PCmpz, base: PCmpz, exp: culong): void {.importc: "mpz_pow_ui", header: "<gmp.h>"}
+proc CMpzMul(mpz, mpz2, mpz3: PCmpz) {.cdecl, importc: "mpz_mul", header:"<gmp.h>"}
 
+# Exponentiation
+proc CmpzPowUi(rop: PCmpz, base: PCmpz, exp: culong) {.cdecl, importc: "mpz_pow_ui", header: "<gmp.h>"}
+
+# Misc
 proc CmpzFacUi(rop: PCmpz, exp: culong): void {.importc: "mpz_fac_ui", header: "<gmp.h>"}
 
 proc mpzFinalizer(mpz: Pmpz) =
@@ -99,17 +102,39 @@ proc `-=`*(mpz, mpz2: PMpz) =
   ## Same as subtraction, assigns result to first variable
   CmpzSub(mpz.p, mpz.p, mpz2.p)
 
-when isMainModule:
-  var a = newMpz(-10)
-  var b = newMpz(-20)
-  var c = newMpz(-30)
-  var d = newMpz(-40)
-  echo(a, " ", b, " ", c, " ", d)
-  a.swap(b)
-  echo(a, " ", b, " ", c, " ", d)
-  a += b
-  echo a
-  a = b
-  echo (b, " ", b + 10, " ", b - c)
+proc `*`*(mpz, mpz2: PMpz): PMpz = 
+  ## Performs multiplication on two Mpz objects
+  ## returns new Mpz object.
+  result = newMpz()
+  CmpzMul(result.p, mpz.p, mpz2.p)
 
+proc `*=`*(mpz, mpz2: PMpz) =
+  ## Same as multiplication, assigns result to first variable.
+  CmpzMul(mpz.p, mpz.p, mpz2.p)
+
+proc pow *(mpz: PMpz, val: int): PMpz =
+  ## Raise PMpz to the power of int.
+  result = newMpz()
+  CmpzPowUi(result.p, mpz.p, culong(val))
+
+when isMainModule:
+  from strutils import parseInt
+
+  # Solve Euler 56
+  proc digitSum(num: string): int =
+    for c in num:
+      result += parseInt($c)
+      
+  proc solve56() =
+    var 
+      sum = 0
+    for a in 1.. <100:
+      var ax = newMpz(a)
+      for b in 1.. <100:
+        var tmpres = digitSum($pow(ax, b))
+        if tmpres > sum: sum = tmpres
+    echo sum
+
+  solve56()
+    
 {.passL: "-L/usr/local/lib -lgmp".}
